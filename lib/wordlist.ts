@@ -1,31 +1,41 @@
-import { words4 } from './wordlists/4';
-import { words5 } from './wordlists/5';
-import { words6 } from './wordlists/6';
-import { words7 } from './wordlists/7';
-import { words8 } from './wordlists/8';
+// Legacy wordlist interface - now delegates to words.ts
+// This maintains backward compatibility while using the new dictionary system
 
-export const wordLists: Record<number, string[]> = {
-  4: words4,
-  5: words5,
-  6: words6,
-  7: words7,
-  8: words8,
-};
+import { 
+  loadWordSets, 
+  loadWordsByLength, 
+  getValidWordsForLength, 
+  isValidWord as checkValidWord, 
+  getRandomWord as getRandomWordFromDict,
+  clearWordCache 
+} from './words';
 
+export type WordsByLength = Record<number, Set<string>>;
+
+// Re-export for convenience
+export { loadWordSets, loadWordsByLength, clearWordCache } from './words';
+
+/**
+ * @deprecated Use loadWordSets() instead
+ * Returns empty array for backward compatibility
+ */
 export function getWordList(length: number): string[] {
-  return wordLists[length] || [];
+  const words = getValidWordsForLength(length);
+  return Array.from(words);
 }
 
+/**
+ * Gets a random word of the specified length
+ * Requires words to be loaded first via loadWordSets() or loadWordsByLength()
+ */
 export function getRandomWord(length: number): string {
-  const words = getWordList(length);
-  if (words.length === 0) {
-    throw new Error(`No word list available for length ${length}`);
-  }
-  return words[Math.floor(Math.random() * words.length)].toUpperCase();
+  return getRandomWordFromDict(length);
 }
 
+/**
+ * Checks if a word is valid for the given length
+ * Requires words to be loaded first via loadWordSets() or loadWordsByLength()
+ */
 export function isValidWord(word: string, length: number): boolean {
-  const words = getWordList(length);
-  return words.some(w => w.toUpperCase() === word.toUpperCase());
+  return checkValidWord(word, length);
 }
-

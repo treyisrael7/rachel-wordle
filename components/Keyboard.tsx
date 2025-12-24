@@ -1,9 +1,9 @@
 'use client';
 
-import { LetterState, GuessEvaluation, getBestLetterState } from '@/lib/wordle';
+import { KeyStatus } from '@/lib/wordle';
 
 interface KeyboardProps {
-  evaluations: GuessEvaluation[];
+  keyStatusMap: Record<string, KeyStatus>;
   onKeyPress: (key: string) => void;
   onEnter: () => void;
   onBackspace: () => void;
@@ -16,16 +16,16 @@ const KEYBOARD_LAYOUT = [
 ];
 
 export default function Keyboard({
-  evaluations,
+  keyStatusMap,
   onKeyPress,
   onEnter,
   onBackspace,
 }: KeyboardProps) {
   const getKeyState = (letter: string): string => {
-    const state = getBestLetterState(letter, evaluations);
-    if (state === 'correct') return 'bg-green-500 text-white';
-    if (state === 'present') return 'bg-yellow-500 text-white';
-    if (state === 'absent') return 'bg-gray-400 text-white';
+    const status = keyStatusMap[letter];
+    if (status === 'correct') return 'bg-green-500 text-white';
+    if (status === 'present') return 'bg-yellow-500 text-white';
+    if (status === 'absent') return 'bg-gray-400 text-white';
     return 'bg-gray-200 text-gray-800 hover:bg-gray-300';
   };
 

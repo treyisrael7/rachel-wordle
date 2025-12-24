@@ -109,6 +109,7 @@ export function getBestLetterState(
 }
 
 export type GameStatus = 'playing' | 'won' | 'lost';
+export type KeyStatus = 'absent' | 'present' | 'correct';
 
 export interface GameState {
   answer: string;
@@ -118,6 +119,7 @@ export interface GameState {
   status: GameStatus;
   wordLength: number;
   maxGuesses: number;
+  keyStatusMap: Record<string, KeyStatus>;
 }
 
 export function createGameState(
@@ -133,6 +135,7 @@ export function createGameState(
     status: 'playing',
     wordLength,
     maxGuesses,
+    keyStatusMap: {},
   };
 }
 
@@ -162,6 +165,48 @@ export function removeLetterFromGuess(state: GameState): GameState {
   };
 }
 
+/**
+ * Updates keyStatusMap based on evaluation with proper precedence:
+ * - correct > present > absent
+ * - Once a key is "correct", it never downgrades
+ */
+function updateKeyStatusMap(
+  currentMap: Record<string, KeyStatus>,
+  evaluation: GuessEvaluation
+): Record<string, KeyStatus> {
+  const newMap = { ...currentMap };
+
+  for (const letterEval of evaluation.evaluations) {
+    const letter = letterEval.letter;
+    const currentStatus: KeyStatus | undefined = newMap[letter];
+    const newStatus: KeyStatus = letterEval.state as KeyStatus;
+
+    // Precedence: correct > present > absent
+    // Once correct, never downgrade
+    if (currentStatus === 'correct') {
+      continue; // Keep as correct
+    }
+
+    // Update based on new status with proper precedence
+    if (newStatus === 'correct') {
+      newMap[letter] = 'correct';
+    } else if (newStatus === 'present') {
+      // Only set to present if not already correct (we know it's not from the check above)
+      // and not already present
+      if (currentStatus !== 'present') {
+        newMap[letter] = 'present';
+      }
+    } else if (newStatus === 'absent') {
+      // Only set to absent if no status yet
+      if (currentStatus === undefined) {
+        newMap[letter] = 'absent';
+      }
+    }
+  }
+
+  return newMap;
+}
+
 export function submitGuess(
   state: GameState,
   isValidWordFn: (word: string) => boolean
@@ -174,16 +219,20 @@ export function submitGuess(
     return state; // Not enough letters
   }
 
-  if (!isValidWordFn(state.currentGuess)) {
+  // Normalize guess to uppercase for validation
+  const guessUpper = state.currentGuess.toUpperCase();
+  
+  if (!isValidWordFn(guessUpper)) {
     return state; // Invalid word - will be handled by UI
   }
 
-  const evaluation = evaluateGuess(state.currentGuess, state.answer);
-  const newGuesses = [...state.guesses, state.currentGuess];
+  const evaluation = evaluateGuess(guessUpper, state.answer);
+  const newGuesses = [...state.guesses, guessUpper];
   const newEvaluations = [...state.evaluations, evaluation];
+  const newKeyStatusMap = updateKeyStatusMap(state.keyStatusMap, evaluation);
 
   let newStatus: GameStatus = 'playing';
-  if (state.currentGuess === state.answer) {
+  if (guessUpper === state.answer) {
     newStatus = 'won';
   } else if (newGuesses.length >= state.maxGuesses) {
     newStatus = 'lost';
@@ -195,6 +244,7 @@ export function submitGuess(
     evaluations: newEvaluations,
     currentGuess: '',
     status: newStatus,
+    keyStatusMap: newKeyStatusMap,
   };
 }
 
