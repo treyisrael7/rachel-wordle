@@ -26,20 +26,29 @@ export default function Keyboard({
   disabled = false,
 }: KeyboardProps) {
   const [keySizes, setKeySizes] = useState({ 
-    letter: 'w-8 sm:w-9 md:w-10 h-10 sm:h-11', 
-    special: 'px-3 sm:px-4 h-10 sm:h-11' 
+    letter: 'min-w-[32px] sm:min-w-[36px] md:min-w-[40px] h-11 sm:h-12 px-2 sm:px-2.5', 
+    special: 'min-w-[60px] sm:min-w-[70px] md:min-w-[80px] h-11 sm:h-12 px-3 sm:px-4' 
   });
 
   useEffect(() => {
     const updateKeySize = () => {
       const vh = window.innerHeight;
-      // Ensure minimum 44px height for touch targets on mobile
+      // Ensure minimum 44px height and readable width for touch targets on mobile
       if (vh < 600) {
-        setKeySizes({ letter: 'w-7 sm:w-8 h-11 sm:h-12', special: 'px-2.5 sm:px-3 h-11 sm:h-12' });
+        setKeySizes({ 
+          letter: 'min-w-[30px] sm:min-w-[34px] h-11 sm:h-12 px-1.5 sm:px-2', 
+          special: 'min-w-[55px] sm:min-w-[65px] h-11 sm:h-12 px-2 sm:px-3' 
+        });
       } else if (vh < 700) {
-        setKeySizes({ letter: 'w-7.5 sm:w-8 h-11 sm:h-12', special: 'px-3 sm:px-3.5 h-11 sm:h-12' });
+        setKeySizes({ 
+          letter: 'min-w-[32px] sm:min-w-[36px] h-11 sm:h-12 px-2 sm:px-2.5', 
+          special: 'min-w-[60px] sm:min-w-[70px] h-11 sm:h-12 px-2.5 sm:px-3' 
+        });
       } else {
-        setKeySizes({ letter: 'w-8 sm:w-9 md:w-10 h-11 sm:h-12', special: 'px-3 sm:px-4 h-11 sm:h-12' });
+        setKeySizes({ 
+          letter: 'min-w-[32px] sm:min-w-[36px] md:min-w-[40px] h-11 sm:h-12 px-2 sm:px-2.5', 
+          special: 'min-w-[60px] sm:min-w-[70px] md:min-w-[80px] h-11 sm:h-12 px-3 sm:px-4' 
+        });
       }
     };
 
@@ -68,9 +77,9 @@ export default function Keyboard({
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 w-full max-w-none">
       {KEYBOARD_LAYOUT.map((row, rowIndex) => (
-        <div key={rowIndex} className="flex gap-1.5 justify-center">
+        <div key={rowIndex} className="flex gap-1 sm:gap-1.5 justify-center items-center">
           {row.map((key) => {
             const isSpecial = key === 'ENTER' || key === 'BACKSPACE';
             const keyState = isSpecial

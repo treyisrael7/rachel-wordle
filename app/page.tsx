@@ -471,7 +471,7 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* Board Card - Unified container for board and keyboard */}
+                    {/* Board Card - Scrollable board section only */}
                     <Card className="p-6 flex-1 flex flex-col min-h-0">
                       {/* Scrollable board section */}
                       <div 
@@ -491,23 +491,6 @@ export default function Home() {
                           />
                         </div>
                       </div>
-
-                      {/* Keyboard - Below board in normal flow, same background */}
-                      {gameState && wordsLoaded && (
-                        <div 
-                          ref={keyboardRef}
-                          className="shrink-0 pt-3 pb-4 border-t"
-                          style={{ borderColor: 'var(--border)' }}
-                        >
-                          <Keyboard
-                            keyStatusMap={gameState.keyStatusMap}
-                            onKeyPress={handleKeyPress}
-                            onEnter={handleEnter}
-                            onBackspace={handleBackspace}
-                            disabled={isRevealing}
-                          />
-                        </div>
-                      )}
                     </Card>
                   </div>
                 );
@@ -560,6 +543,23 @@ export default function Home() {
             }}
           </Tabs>
         </div>
+
+        {/* Keyboard - Outside max-w-md container, full-width */}
+        {activeTab === 'board' && gameState && wordsLoaded && (
+          <div 
+            ref={keyboardRef}
+            className="shrink-0 w-full max-w-none pt-3 pb-4 px-2 bg-white border-t"
+            style={{ borderColor: 'var(--border)' }}
+          >
+            <Keyboard
+              keyStatusMap={gameState.keyStatusMap}
+              onKeyPress={handleKeyPress}
+              onEnter={handleEnter}
+              onBackspace={handleBackspace}
+              disabled={isRevealing}
+            />
+          </div>
+        )}
       </main>
 
       {/* Result Modal */}
