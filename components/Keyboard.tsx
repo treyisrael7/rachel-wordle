@@ -1,12 +1,15 @@
 'use client';
 
 import { KeyStatus } from '@/lib/wordle';
+import { useEffect, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface KeyboardProps {
   keyStatusMap: Record<string, KeyStatus>;
   onKeyPress: (key: string) => void;
   onEnter: () => void;
   onBackspace: () => void;
+  disabled?: boolean;
 }
 
 const KEYBOARD_LAYOUT = [
@@ -20,7 +23,31 @@ export default function Keyboard({
   onKeyPress,
   onEnter,
   onBackspace,
+  disabled = false,
 }: KeyboardProps) {
+  const [keySizes, setKeySizes] = useState({ 
+    letter: 'w-8 sm:w-9 md:w-10 h-10 sm:h-11', 
+    special: 'px-3 sm:px-4 h-10 sm:h-11' 
+  });
+
+  useEffect(() => {
+    const updateKeySize = () => {
+      const vh = window.innerHeight;
+      // Ensure minimum 44px height for touch targets on mobile
+      if (vh < 600) {
+        setKeySizes({ letter: 'w-7 sm:w-8 h-11 sm:h-12', special: 'px-2.5 sm:px-3 h-11 sm:h-12' });
+      } else if (vh < 700) {
+        setKeySizes({ letter: 'w-7.5 sm:w-8 h-11 sm:h-12', special: 'px-3 sm:px-3.5 h-11 sm:h-12' });
+      } else {
+        setKeySizes({ letter: 'w-8 sm:w-9 md:w-10 h-11 sm:h-12', special: 'px-3 sm:px-4 h-11 sm:h-12' });
+      }
+    };
+
+    updateKeySize();
+    window.addEventListener('resize', updateKeySize);
+    return () => window.removeEventListener('resize', updateKeySize);
+  }, []);
+
   const getKeyState = (letter: string): string => {
     const status = keyStatusMap[letter];
     if (status === 'correct') return 'bg-green-500 text-white';
@@ -30,6 +57,7 @@ export default function Keyboard({
   };
 
   const handleKeyClick = (key: string) => {
+    if (disabled) return;
     if (key === 'ENTER') {
       onEnter();
     } else if (key === 'BACKSPACE') {
@@ -40,9 +68,9 @@ export default function Keyboard({
   };
 
   return (
-    <div className="flex flex-col gap-2 mt-8">
+    <div className="flex flex-col gap-2">
       {KEYBOARD_LAYOUT.map((row, rowIndex) => (
-        <div key={rowIndex} className="flex gap-1 justify-center">
+        <div key={rowIndex} className="flex gap-1.5 justify-center">
           {row.map((key) => {
             const isSpecial = key === 'ENTER' || key === 'BACKSPACE';
             const keyState = isSpecial
@@ -53,39 +81,21 @@ export default function Keyboard({
               <button
                 key={key}
                 onClick={() => handleKeyClick(key)}
-                className={`
-                  ${keyState}
-                  font-semibold
-                  rounded
-                  transition-colors
-                  active:scale-95
-                  ${
-                    isSpecial
-                      ? 'px-3 sm:px-4 h-10 sm:h-12 text-xs sm:text-sm text-white'
-                      : 'w-8 sm:w-10 h-10 sm:h-12 text-sm sm:text-base'
-                  }
-                `}
-                style={
+                disabled={disabled}
+                className={cn(
+                  keyState,
+                  'font-medium rounded-2xl transition-all duration-200',
+                  'focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2',
+                  'active:scale-95 active:opacity-80',
+                  'min-h-[44px]',
+                  disabled && 'opacity-50 cursor-not-allowed',
                   isSpecial
-                    ? {
-                        backgroundColor: 'var(--accent)',
-                      }
-                    : undefined
-                }
-                onMouseEnter={
-                  isSpecial
-                    ? (e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--accent-dark)';
-                      }
-                    : undefined
-                }
-                onMouseLeave={
-                  isSpecial
-                    ? (e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--accent)';
-                      }
-                    : undefined
-                }
+                    ? `${keySizes.special} text-xs sm:text-sm text-white shadow-sm hover:shadow-md bg-pink-500 hover:bg-pink-600`
+                    : `${keySizes.letter} text-sm sm:text-base`
+                )}
+                style={{
+                  touchAction: 'manipulation',
+                }}
               >
                 {key === 'BACKSPACE' ? '⌫' : key}
               </button>
@@ -96,4 +106,3 @@ export default function Keyboard({
     </div>
   );
 }
-

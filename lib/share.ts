@@ -32,6 +32,10 @@ export function generateShareText(
     lines.push(`Play: ${siteUrl}`);
   }
 
+  // Add personalized message
+  lines.push('');
+  lines.push('Share with me please I want to see how you like it!');
+
   return lines.join('\n');
 }
 

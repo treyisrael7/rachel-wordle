@@ -7,8 +7,9 @@
   --primary-dark: #059669;
   --accent: #ec4899;
   --accent-dark: #db2777;
-  --bg: #f9fafb;
-  --card: #ffffff;
+  --page-bg: linear-gradient(to bottom, #f0fdf4 0%, #f9fafb 100%);
+  --card-bg: #ffffff;
+  --surface-2: #f5f5f5;
   --text: #111827;
   --muted: #6b7280;
   --border: #e5e7eb;
@@ -16,19 +17,63 @@
 
 @layer base {
   body {
-    background-color: var(--bg);
+    background: var(--page-bg);
     color: var(--text);
   }
 }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-  20%, 40%, 60%, 80% { transform: translateX(5px); }
+/* Tile Pop Animation - for typing */
+@keyframes tilePop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 
-.animate-shake {
-  animation: shake 0.5s;
+.animate-tile-pop {
+  animation: tilePop 140ms ease-out;
+}
+
+/* Row Shake Animation - for invalid words */
+@keyframes rowShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+  20%, 40%, 60%, 80% { transform: translateX(8px); }
+}
+
+.animate-row-shake {
+  animation: rowShake 500ms ease-in-out;
+}
+
+/* Tile Flip Animation - for reveal */
+@keyframes tileFlip {
+  0% {
+    transform: rotateX(0deg);
+  }
+  50% {
+    transform: rotateX(-90deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+.animate-tile-flip {
+  animation: tileFlip 600ms ease-in-out;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  animation-fill-mode: both;
+}
+
+/* Tile Bounce Animation - for win celebration */
+@keyframes tileBounce {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-8px); }
+  50% { transform: translateY(0); }
+  75% { transform: translateY(-4px); }
+}
+
+.animate-tile-bounce {
+  animation: tileBounce 600ms ease-in-out;
 }
 
 /* Mobile safe area support */
@@ -37,5 +82,49 @@
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+/* Ensure keyboard doesn't overlap on mobile */
+@supports (padding: max(0px)) {
+  .keyboard-container {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Tab content animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fade-in 200ms ease-out;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-tile-pop,
+  .animate-row-shake,
+  .animate-tile-flip,
+  .animate-tile-bounce,
+  .transition-all,
+  .transition-opacity,
+  .transition-colors {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Touch-friendly styles */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 

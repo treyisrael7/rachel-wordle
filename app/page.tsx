@@ -3,9 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Board from '@/components/Board';
 import Keyboard from '@/components/Keyboard';
-import Settings from '@/components/Settings';
 import Modal from '@/components/Modal';
-import StatsModal from '@/components/StatsModal';
+import HelpModal from '@/components/HelpModal';
+import StatsTab from '@/components/StatsTab';
+import SettingsTab from '@/components/SettingsTab';
+import Tabs from '@/components/ui/Tabs';
+import Card from '@/components/ui/Card';
+import IconButton from '@/components/ui/IconButton';
+import { RotateCcw, HelpCircle } from 'lucide-react';
 import {
   GameState,
   createGameState,
@@ -80,10 +85,12 @@ export default function Home() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [stats, setStats] = useState<GameStats>(loadStats());
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [showStats, setShowStats] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('board');
+  const keyboardRef = useRef<HTMLDivElement>(null);
   const [shakeRow, setShakeRow] = useState<number | null>(null);
+  const [isRevealing, setIsRevealing] = useState(false);
   const [winMessage, setWinMessage] = useState<string>('');
   const [wordsLoaded, setWordsLoaded] = useState(false);
   const [wordsError, setWordsError] = useState<string | null>(null);
@@ -166,12 +173,13 @@ export default function Home() {
         const newStats = updateStatsOnWin(
           guessesUsed,
           gameState.answer,
-          gameState.maxGuesses
+          gameState.maxGuesses,
+          gameState.wordLength
         );
         setStats(newStats);
         setWinMessage(getRandomWinMessage());
       } else if (gameState.status === 'lost') {
-        const newStats = updateStatsOnLoss(gameState.answer);
+        const newStats = updateStatsOnLoss(gameState.answer, gameState.wordLength);
         setStats(newStats);
       }
       setShowResultModal(true);
@@ -180,21 +188,21 @@ export default function Home() {
 
   const handleKeyPress = useCallback(
     (letter: string) => {
-      if (!gameState || gameState.status !== 'playing' || !wordsLoaded) return;
+      if (!gameState || gameState.status !== 'playing' || !wordsLoaded || isRevealing) return;
       setGameState(addLetterToGuess(gameState, letter));
       setErrorMessage('');
     },
-    [gameState, wordsLoaded]
+    [gameState, wordsLoaded, isRevealing]
   );
 
   const handleBackspace = useCallback(() => {
-    if (!gameState || gameState.status !== 'playing' || !wordsLoaded) return;
+    if (!gameState || gameState.status !== 'playing' || !wordsLoaded || isRevealing) return;
     setGameState(removeLetterFromGuess(gameState));
     setErrorMessage('');
-  }, [gameState, wordsLoaded]);
+  }, [gameState, wordsLoaded, isRevealing]);
 
   const handleEnter = useCallback(() => {
-    if (!gameState || gameState.status !== 'playing' || !wordsLoaded) {
+    if (!gameState || gameState.status !== 'playing' || !wordsLoaded || isRevealing) {
       return;
     }
 
@@ -213,6 +221,9 @@ export default function Home() {
       return;
     }
 
+    // Start reveal animation
+    setIsRevealing(true);
+    
     const newState = submitGuess(gameState, (word) => {
       const valid = isValidWord(word, gameState.wordLength);
       if (!valid) {
@@ -226,17 +237,18 @@ export default function Home() {
         newState.currentGuess === gameState.currentGuess) {
       // State didn't change, something went wrong
       console.log('State did not change after submitGuess - word may be invalid');
+      setIsRevealing(false);
       return;
     }
     
     console.log('Guess submitted successfully. Answer is:', newState.answer, 'Guesses:', newState.guesses.length);
     setGameState(newState);
     setErrorMessage('');
-  }, [gameState, wordsLoaded]);
+  }, [gameState, wordsLoaded, isRevealing]);
 
   // Handle physical keyboard
   useEffect(() => {
-    if (!gameState || gameState.status !== 'playing' || !wordsLoaded) return;
+    if (!gameState || gameState.status !== 'playing' || !wordsLoaded || isRevealing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
@@ -250,7 +262,7 @@ export default function Home() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState, wordsLoaded, handleEnter, handleBackspace, handleKeyPress]);
+  }, [gameState, wordsLoaded, isRevealing, handleEnter, handleBackspace, handleKeyPress]);
 
   const handleNewGame = useCallback(() => {
     if (!gameState || !wordsLoaded) return;
@@ -303,11 +315,9 @@ export default function Home() {
         try {
           const newState = startNewGame(newWordLength, newMaxGuesses);
           setGameState(newState);
-          setShowSettings(false);
         } catch (error) {
           console.error('Failed to start new game:', error);
           setErrorMessage('Failed to start new game. Please refresh the page.');
-          setShowSettings(false);
         }
       }
     },
@@ -354,12 +364,12 @@ export default function Home() {
   // Loading state
   if (isLoadingWords) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
-        <div className="text-center">
-          <div className="text-2xl font-bold mb-4" style={{ color: 'var(--primary)' }}>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
+        <div className="text-center max-w-md">
+          <div className="text-xl sm:text-2xl font-bold mb-4" style={{ color: 'var(--primary)' }}>
             {BRANDING.title}
           </div>
-          <div className="text-lg text-gray-600">Loading dictionary...</div>
+          <div className="text-base sm:text-lg text-gray-600">Loading dictionary...</div>
         </div>
       </div>
     );
@@ -368,12 +378,12 @@ export default function Home() {
   // Error state
   if (wordsError) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
         <div className="text-center max-w-md">
-          <div className="text-2xl font-bold mb-4" style={{ color: 'var(--primary)' }}>
+          <div className="text-xl sm:text-2xl font-bold mb-4" style={{ color: 'var(--primary)' }}>
             {BRANDING.title}
           </div>
-          <div className="text-lg text-red-600 mb-4">
+          <div className="text-base sm:text-lg text-red-600 mb-4">
             Failed to load word lists
           </div>
           <div className="text-sm text-gray-600 mb-6">
@@ -381,7 +391,7 @@ export default function Home() {
           </div>
           <button
             onClick={handleRetryLoad}
-            className="text-white font-semibold py-2 px-6 rounded transition-colors"
+            className="text-white font-semibold py-2 px-6 rounded transition-colors text-sm sm:text-base"
             style={{
               backgroundColor: 'var(--primary)',
             }}
@@ -401,8 +411,8 @@ export default function Home() {
 
   if (!gameState || !wordsLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-base sm:text-lg">Loading...</div>
       </div>
     );
   }
@@ -415,126 +425,160 @@ export default function Home() {
       : getLoseMessage(gameState.answer);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 safe-area-inset">
-      <div className="w-full max-w-2xl">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h1
-            className="text-4xl sm:text-5xl font-bold mb-2"
-            style={{ color: 'var(--primary)' }}
+    <div className="min-h-[100dvh] flex flex-col" style={{ background: 'var(--page-bg)' }}>
+      {/* App Bar */}
+      <header className="shrink-0 px-4 pt-4 pb-3 border-b border-neutral-300 bg-white shadow-sm">
+        <div className="max-w-md mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold text-neutral-900">
+              {BRANDING.title}
+            </h1>
+            <p className="text-sm text-neutral-500 mt-0.5">
+              {BRANDING.subtitle}
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            <IconButton onClick={handleReset} title="Reset Game">
+              <RotateCcw className="h-5 w-5" />
+            </IconButton>
+            <IconButton onClick={() => setShowHelpModal(true)} title="Help">
+              <HelpCircle className="h-5 w-5" />
+            </IconButton>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <div className="max-w-md mx-auto w-full px-4 flex-1 flex flex-col min-h-0">
+          <Tabs
+            tabs={[
+              { id: 'board', label: 'Board' },
+              { id: 'stats', label: 'Stats' },
+              { id: 'settings', label: 'Settings' },
+            ]}
+            defaultTab={activeTab}
+            onTabChange={setActiveTab}
           >
-            {BRANDING.title}
-          </h1>
-          <p className="text-sm sm:text-base text-gray-600 mb-4">
-            {BRANDING.subtitle}
-          </p>
-          <div className="flex justify-center gap-2 sm:gap-4 mt-4 flex-wrap">
-            <button
-              onClick={() => setShowStats(true)}
-              className="text-white font-semibold py-2 px-4 rounded transition-colors text-sm sm:text-base"
-              style={{
-                backgroundColor: 'var(--accent)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--accent-dark)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--accent)';
-              }}
-            >
-              📊 Stats
-            </button>
-            <button
-              onClick={() => setShowSettings(true)}
-              className="text-white font-semibold py-2 px-4 rounded transition-colors text-sm sm:text-base"
-              style={{
-                backgroundColor: 'var(--primary)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--primary)';
-              }}
-            >
-              ⚙️ Settings
-            </button>
-            <button
-              onClick={handleReset}
-              className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded transition-colors text-sm sm:text-base"
-            >
-              🔄 Reset
-            </button>
-          </div>
+            {(currentTab) => {
+              if (currentTab === 'board') {
+                return (
+                  <div className="flex-1 flex flex-col min-h-0">
+                    {/* Error Message */}
+                    {errorMessage && (
+                      <div className="text-center text-red-600 mb-3 text-sm font-medium shrink-0">
+                        {errorMessage}
+                      </div>
+                    )}
+
+                    {/* Board Card - Unified container for board and keyboard */}
+                    <Card className="p-6 flex-1 flex flex-col min-h-0">
+                      {/* Scrollable board section */}
+                      <div 
+                        className="flex-1 overflow-y-auto overscroll-contain pb-6"
+                      >
+                        <div className="flex justify-center">
+                          <Board
+                            wordLength={gameState.wordLength}
+                            maxGuesses={gameState.maxGuesses}
+                            guesses={gameState.guesses}
+                            evaluations={gameState.evaluations}
+                            currentGuess={gameState.currentGuess}
+                            shakeRow={shakeRow}
+                            isRevealing={isRevealing}
+                            onRevealComplete={() => setIsRevealing(false)}
+                            gameStatus={gameState.status}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Keyboard - Below board in normal flow, same background */}
+                      {gameState && wordsLoaded && (
+                        <div 
+                          ref={keyboardRef}
+                          className="shrink-0 pt-3 pb-4 border-t"
+                          style={{ borderColor: 'var(--border)' }}
+                        >
+                          <Keyboard
+                            keyStatusMap={gameState.keyStatusMap}
+                            onKeyPress={handleKeyPress}
+                            onEnter={handleEnter}
+                            onBackspace={handleBackspace}
+                            disabled={isRevealing}
+                          />
+                        </div>
+                      )}
+                    </Card>
+                  </div>
+                );
+              }
+              if (currentTab === 'stats') {
+                return (
+                  <div>
+                    {/* Error Message */}
+                    {errorMessage && (
+                      <div className="text-center text-red-600 mb-4 text-sm font-medium">
+                        {errorMessage}
+                      </div>
+                    )}
+                    <Card className="p-6">
+                      <StatsTab
+                        stats={stats}
+                        maxGuesses={gameState.maxGuesses}
+                        wordLength={gameState.wordLength}
+                        onStatsReset={handleStatsReset}
+                      />
+                    </Card>
+                  </div>
+                );
+              }
+              if (currentTab === 'settings') {
+                return (
+                  <div>
+                    {/* Error Message */}
+                    {errorMessage && (
+                      <div className="text-center text-red-600 mb-4 text-sm font-medium">
+                        {errorMessage}
+                      </div>
+                    )}
+                    <Card className="p-6">
+                      <SettingsTab
+                        wordLength={gameState.wordLength}
+                        maxGuesses={gameState.maxGuesses}
+                        onWordLengthChange={(length) =>
+                          handleSettingsChange(length, gameState.maxGuesses)
+                        }
+                        onMaxGuessesChange={(guesses) =>
+                          handleSettingsChange(gameState.wordLength, guesses)
+                        }
+                      />
+                    </Card>
+                  </div>
+                );
+              }
+              return null;
+            }}
+          </Tabs>
         </div>
+      </main>
 
-        {/* Error Message */}
-        {errorMessage && (
-          <div className="text-center text-red-600 mb-4 font-semibold">
-            {errorMessage}
-          </div>
-        )}
+      {/* Result Modal */}
+      <Modal
+        isOpen={showResultModal}
+        onClose={() => setShowResultModal(false)}
+        title={resultTitle}
+        message={resultMessage}
+        buttonText="New Game"
+        onButtonClick={handleNewGame}
+        showShare={gameState.status === 'won'}
+        onShare={handleShare}
+      />
 
-        {/* Board */}
-        <div
-          className={`mb-6 ${
-            shakeRow !== null ? 'animate-shake' : ''
-          }`}
-        >
-          <Board
-            wordLength={gameState.wordLength}
-            maxGuesses={gameState.maxGuesses}
-            guesses={gameState.guesses}
-            evaluations={gameState.evaluations}
-            currentGuess={gameState.currentGuess}
-          />
-        </div>
-
-        {/* Keyboard */}
-        <div className={wordsLoaded ? '' : 'opacity-50 pointer-events-none'}>
-          <Keyboard
-            keyStatusMap={gameState.keyStatusMap}
-            onKeyPress={handleKeyPress}
-            onEnter={handleEnter}
-            onBackspace={handleBackspace}
-          />
-        </div>
-
-        {/* Settings Modal */}
-        <Settings
-          wordLength={gameState.wordLength}
-          maxGuesses={gameState.maxGuesses}
-          onWordLengthChange={(length) =>
-            handleSettingsChange(length, gameState.maxGuesses)
-          }
-          onMaxGuessesChange={(guesses) =>
-            handleSettingsChange(gameState.wordLength, guesses)
-          }
-          isOpen={showSettings}
-          onClose={() => setShowSettings(false)}
-        />
-
-        {/* Stats Modal */}
-        <StatsModal
-          isOpen={showStats}
-          onClose={() => setShowStats(false)}
-          stats={stats}
-          maxGuesses={gameState.maxGuesses}
-          onStatsReset={handleStatsReset}
-        />
-
-        {/* Result Modal */}
-        <Modal
-          isOpen={showResultModal}
-          onClose={() => setShowResultModal(false)}
-          title={resultTitle}
-          message={resultMessage}
-          buttonText="New Game"
-          onButtonClick={handleNewGame}
-          showShare={gameState.status === 'won'}
-          onShare={handleShare}
-        />
-      </div>
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+      />
     </div>
   );
 }
