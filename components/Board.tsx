@@ -57,9 +57,9 @@ export default function Board({
                 <div
                   key={colIndex}
                   className={`
-                    w-14 h-14 sm:w-16 sm:h-16
+                    w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16
                     flex items-center justify-center
-                    text-2xl font-bold
+                    text-xl sm:text-2xl font-bold
                     rounded
                     transition-all duration-150
                     ${cellState}

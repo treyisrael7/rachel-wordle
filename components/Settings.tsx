@@ -28,7 +28,9 @@ export default function Settings({
         className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-2xl font-bold mb-4">Settings</h2>
+        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--primary)' }}>
+          Settings
+        </h2>
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -75,7 +77,16 @@ export default function Settings({
         <div className="flex justify-end">
           <button
             onClick={onClose}
-            className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded transition-colors"
+            className="text-white font-semibold py-2 px-6 rounded transition-colors"
+            style={{
+              backgroundColor: 'var(--primary)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--primary)';
+            }}
           >
             Close
           </button>

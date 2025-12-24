@@ -5,6 +5,7 @@ import Board from '@/components/Board';
 import Keyboard from '@/components/Keyboard';
 import Settings from '@/components/Settings';
 import Modal from '@/components/Modal';
+import StatsModal from '@/components/StatsModal';
 import {
   GameState,
   createGameState,
@@ -14,6 +15,22 @@ import {
   GameStatus,
 } from '@/lib/wordle';
 import { getRandomWord, isValidWord } from '@/lib/wordlist';
+import {
+  BRANDING,
+  getRandomWinMessage,
+  getLoseMessage,
+} from '@/lib/config';
+import {
+  GameStats,
+  loadStats,
+  updateStatsOnWin,
+  updateStatsOnLoss,
+} from '@/lib/stats';
+import {
+  generateShareText,
+  copyToClipboard,
+  getSiteUrl,
+} from '@/lib/share';
 
 const STORAGE_KEY = 'wordle-game-state';
 
@@ -46,10 +63,13 @@ function startNewGame(wordLength: number, maxGuesses: number): GameState {
 
 export default function Home() {
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [stats, setStats] = useState<GameStats>(loadStats());
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
   const [shakeRow, setShakeRow] = useState<number | null>(null);
+  const [winMessage, setWinMessage] = useState<string>('');
 
   // Initialize game
   useEffect(() => {
@@ -68,6 +88,20 @@ export default function Home() {
     if (gameState) {
       saveGameState(gameState);
       if (gameState.status !== 'playing') {
+        // Update stats when game ends
+        if (gameState.status === 'won') {
+          const guessesUsed = gameState.guesses.length;
+          const newStats = updateStatsOnWin(
+            guessesUsed,
+            gameState.answer,
+            gameState.maxGuesses
+          );
+          setStats(newStats);
+          setWinMessage(getRandomWinMessage());
+        } else if (gameState.status === 'lost') {
+          const newStats = updateStatsOnLoss(gameState.answer);
+          setStats(newStats);
+        }
         setShowResultModal(true);
       }
     }
@@ -134,6 +168,7 @@ export default function Home() {
     setGameState(newState);
     setShowResultModal(false);
     setErrorMessage('');
+    setWinMessage('');
   }, [gameState]);
 
   const handleReset = useCallback(() => {
@@ -144,6 +179,7 @@ export default function Home() {
     setGameState(newState);
     setShowResultModal(false);
     setErrorMessage('');
+    setWinMessage('');
   }, []);
 
   const handleSettingsChange = useCallback(
@@ -155,6 +191,27 @@ export default function Home() {
     []
   );
 
+  const handleShare = useCallback(async () => {
+    if (!gameState || gameState.status !== 'won') return;
+
+    const shareText = generateShareText(
+      gameState.evaluations,
+      gameState.guesses.length,
+      gameState.maxGuesses,
+      getSiteUrl()
+    );
+
+    const success = await copyToClipboard(shareText);
+    if (!success) {
+      // Fallback: show text in alert
+      alert(`Share text:\n\n${shareText}`);
+    }
+  }, [gameState]);
+
+  const handleStatsReset = useCallback(() => {
+    setStats(loadStats());
+  }, []);
+
   if (!gameState) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -164,30 +221,62 @@ export default function Home() {
   }
 
   const resultTitle =
-    gameState.status === 'won' ? 'You Won!' : 'Game Over';
+    gameState.status === 'won' ? winMessage || "You Won!" : 'Game Over';
   const resultMessage =
     gameState.status === 'won'
-      ? `Congratulations! You guessed the word in ${gameState.guesses.length} tries.`
-      : `The word was: ${gameState.answer}`;
+      ? `You guessed the word in ${gameState.guesses.length} ${gameState.guesses.length === 1 ? 'try' : 'tries'}!`
+      : getLoseMessage(gameState.answer);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 safe-area-inset">
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-4xl font-bold mb-2">Wordle Unlimited</h1>
-          <div className="flex justify-center gap-4 mt-4">
+          <h1
+            className="text-4xl sm:text-5xl font-bold mb-2"
+            style={{ color: 'var(--primary)' }}
+          >
+            {BRANDING.title}
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600 mb-4">
+            {BRANDING.subtitle}
+          </p>
+          <div className="flex justify-center gap-2 sm:gap-4 mt-4 flex-wrap">
+            <button
+              onClick={() => setShowStats(true)}
+              className="text-white font-semibold py-2 px-4 rounded transition-colors text-sm sm:text-base"
+              style={{
+                backgroundColor: 'var(--accent)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--accent-dark)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--accent)';
+              }}
+            >
+              📊 Stats
+            </button>
             <button
               onClick={() => setShowSettings(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition-colors"
+              className="text-white font-semibold py-2 px-4 rounded transition-colors text-sm sm:text-base"
+              style={{
+                backgroundColor: 'var(--primary)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--primary)';
+              }}
             >
-              Settings
+              ⚙️ Settings
             </button>
             <button
               onClick={handleReset}
-              className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded transition-colors"
+              className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded transition-colors text-sm sm:text-base"
             >
-              Reset
+              🔄 Reset
             </button>
           </div>
         </div>
@@ -236,6 +325,15 @@ export default function Home() {
           onClose={() => setShowSettings(false)}
         />
 
+        {/* Stats Modal */}
+        <StatsModal
+          isOpen={showStats}
+          onClose={() => setShowStats(false)}
+          stats={stats}
+          maxGuesses={gameState.maxGuesses}
+          onStatsReset={handleStatsReset}
+        />
+
         {/* Result Modal */}
         <Modal
           isOpen={showResultModal}
@@ -244,9 +342,10 @@ export default function Home() {
           message={resultMessage}
           buttonText="New Game"
           onButtonClick={handleNewGame}
+          showShare={gameState.status === 'won'}
+          onShare={handleShare}
         />
       </div>
     </div>
   );
 }
-

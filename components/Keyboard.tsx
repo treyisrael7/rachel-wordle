@@ -46,7 +46,7 @@ export default function Keyboard({
           {row.map((key) => {
             const isSpecial = key === 'ENTER' || key === 'BACKSPACE';
             const keyState = isSpecial
-              ? 'bg-gray-300 text-gray-800 hover:bg-gray-400'
+              ? ''
               : getKeyState(key);
 
             return (
@@ -61,10 +61,31 @@ export default function Keyboard({
                   active:scale-95
                   ${
                     isSpecial
-                      ? 'px-3 sm:px-4 h-10 sm:h-12 text-xs sm:text-sm'
+                      ? 'px-3 sm:px-4 h-10 sm:h-12 text-xs sm:text-sm text-white'
                       : 'w-8 sm:w-10 h-10 sm:h-12 text-sm sm:text-base'
                   }
                 `}
+                style={
+                  isSpecial
+                    ? {
+                        backgroundColor: 'var(--accent)',
+                      }
+                    : undefined
+                }
+                onMouseEnter={
+                  isSpecial
+                    ? (e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--accent-dark)';
+                      }
+                    : undefined
+                }
+                onMouseLeave={
+                  isSpecial
+                    ? (e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--accent)';
+                      }
+                    : undefined
+                }
               >
                 {key === 'BACKSPACE' ? '⌫' : key}
               </button>
