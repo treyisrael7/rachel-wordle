@@ -279,8 +279,8 @@ export default function Home() {
   }, [gameState, wordsLoaded]);
 
   const handleReset = useCallback(async () => {
-    // Ensure words are loaded before resetting
-    if (!wordsLoaded) {
+    // Ensure words are loaded and gameState exists before resetting
+    if (!wordsLoaded || !gameState) {
       setErrorMessage('Please wait for dictionary to load before resetting.');
       return;
     }
@@ -293,9 +293,10 @@ export default function Home() {
     // Double-check by trying to load words if needed
     try {
       await loadWordSets();
-      const newState = startNewGame(5, 6);
+      // Use current settings (wordLength and maxGuesses) instead of defaults
+      const newState = startNewGame(gameState.wordLength, gameState.maxGuesses);
       // Verify the answer was generated
-      if (!newState.answer || newState.answer.length !== 5) {
+      if (!newState.answer || newState.answer.length !== gameState.wordLength) {
         throw new Error('Failed to generate valid answer');
       }
       // Set state directly - the save useEffect will handle saving
@@ -307,7 +308,7 @@ export default function Home() {
       console.error('Failed to start new game:', error);
       setErrorMessage('Failed to start new game. Please refresh the page.');
     }
-  }, [wordsLoaded]);
+  }, [wordsLoaded, gameState]);
 
   const handleSettingsChange = useCallback(
     (newWordLength: number, newMaxGuesses: number) => {
@@ -475,7 +476,7 @@ export default function Home() {
                     <Card className="p-6 flex-1 flex flex-col min-h-0">
                       {/* Scrollable board section */}
                       <div 
-                        className="flex-1 overflow-y-auto overscroll-contain pb-6"
+                        className="flex-1 overflow-y-auto overscroll-contain pb-8"
                       >
                         <div className="flex justify-center">
                           <Board
@@ -548,7 +549,7 @@ export default function Home() {
         {activeTab === 'board' && gameState && wordsLoaded && (
           <div 
             ref={keyboardRef}
-            className="shrink-0 w-full max-w-none pt-3 pb-4 px-2 bg-white border-t"
+            className="shrink-0 w-full max-w-none mt-4 pt-3 pb-4 px-2 bg-white border-t"
             style={{ borderColor: 'var(--border)' }}
           >
             <Keyboard

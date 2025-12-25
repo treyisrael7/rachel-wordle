@@ -170,12 +170,12 @@ export default function Board({
       const eval_ = evaluations[rowIndex];
       if (eval_ && eval_.evaluations[colIndex]) {
         const state = eval_.evaluations[colIndex].state;
-        if (state === 'correct') return 'bg-green-500 text-white';
+        if (state === 'correct') return 'bg-green-500 text-white border border-emerald-600/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]';
         if (state === 'present') return 'bg-yellow-500 text-white';
-        if (state === 'absent') return 'bg-gray-400 text-white';
+        if (state === 'absent') return 'bg-gray-400 text-white shadow-inner';
       }
     }
-    return 'bg-white border-2 border-neutral-400 shadow-inner';
+    return 'bg-white border-2 border-neutral-500 shadow-inner';
   };
 
   return (
@@ -209,7 +209,7 @@ export default function Board({
                 // Get cell state, but delay color change during flip
                 const cellState = shouldShowColor 
                   ? getCellState(rowIndex, colIndex)
-                  : 'bg-white border-2 border-neutral-400 shadow-inner';
+                  : 'bg-white border-2 border-neutral-500 shadow-inner';
                 const isEmpty = !content;
                 
                 // Determine animation classes
@@ -243,7 +243,7 @@ export default function Board({
                       textSize,
                       'font-semibold rounded-2xl',
                       cellState,
-                      isEmpty && 'border-2 border-neutral-400 bg-white shadow-inner',
+                      isEmpty && 'border-2 border-neutral-500 bg-white shadow-inner',
                       animationClasses,
                       !prefersReducedMotion && 'transition-colors duration-200'
                     )}

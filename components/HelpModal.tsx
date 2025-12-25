@@ -48,16 +48,19 @@ export default function HelpModal({ isOpen, onClose }: HelpModalProps) {
 
         <div className="space-y-4 text-sm text-neutral-700">
           <div className="bg-pink-50 border border-pink-200 rounded-2xl p-4">
-            <p className="font-semibold text-pink-700 mb-2">Heyyyy pookie! 💚🩷</p>
-            <p className="text-neutral-700">
-              This isn't your regular Wordle! Here's what makes this special:
+            <p className="font-semibold text-pink-700 mb-3">Heyyyy pookie! 💚🩷</p>
+            <p className="text-neutral-700 mb-3">
+              This isn't your average Wordle...it's your own.
             </p>
-            <ul className="list-disc list-inside space-y-1 ml-2 mt-2 text-neutral-700">
-              <li><strong>Unlimited play</strong> - Play as many games as you want, whenever you want!</li>
-              <li><strong>Customizable difficulty</strong> - Choose word length (4-8 letters) and max guesses (4-8 attempts)</li>
-              <li><strong>Your stats</strong> - Track your wins, streaks, and guess distribution</li>
-              <li><strong>Share your wins</strong> - Share with me please I want to see how you like it!</li>
+            <ul className="list-none space-y-2 mt-3 text-neutral-700">
+              <li>• Play unlimited games anytime</li>
+              <li>• Customize the difficulty (4–8 letter words, 4–8 guesses)</li>
+              <li>• Track your stats, streaks, and guess history</li>
+              <li>• Share your wins with me (pleaseeeee)</li>
             </ul>
+            <p className="text-neutral-700 mt-4">
+              Have fun, and don't forget I made this just for you 🩷
+            </p>
           </div>
         </div>
 

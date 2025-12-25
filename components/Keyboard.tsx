@@ -77,7 +77,7 @@ export default function Keyboard({
   };
 
   return (
-    <div className="flex flex-col gap-2 w-full max-w-none">
+    <div className="flex flex-col gap-3 w-full max-w-none">
       {KEYBOARD_LAYOUT.map((row, rowIndex) => (
         <div key={rowIndex} className="flex gap-1 sm:gap-1.5 justify-center items-center">
           {row.map((key) => {
